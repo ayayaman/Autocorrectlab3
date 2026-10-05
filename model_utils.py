@@ -122,17 +122,26 @@ def rank_next_words(
     start_with: Optional[str] = None,
     top_k: int = 5
 ):
-    """
-    Rank candidate next words using the same additive-smoothed probability
-    used in the notebook's suggest_a_word().
+    """Rank next words using the lab's additive-smoothed probability.
+
+    Important: an n-gram model needs n-1 previous tokens. We therefore
+    use only context that actually exists instead of scoring a 4/5-gram
+    with a 1- or 2-word input (which would make every unseen candidate
+    receive exactly the same probability).
     """
     if not n_gram_counts:
         return []
 
     n = len(next(iter(n_gram_counts)))
-    previous_n_gram = tuple(previous_tokens[-n:])
+    context_size = n
 
-    # The notebook adds <e> and <unk> to the candidate vocabulary.
+    # Do not invent missing context. The caller only asks for useful orders.
+    if len(previous_tokens) < context_size:
+        return []
+
+    previous_n_gram = tuple(previous_tokens[-context_size:])
+
+    # Candidate vocabulary follows the lab, including special tokens.
     candidates = list(vocabulary)
     if "<e>" not in candidates:
         candidates.append("<e>")
@@ -140,9 +149,22 @@ def rank_next_words(
         candidates.append("<unk>")
 
     vocabulary_size = len(candidates)
-    results = []
 
-    for word in candidates:
+    # Find words actually observed after this context. Keeping these first
+    # prevents rare contexts from being dominated by thousands of equally
+    # probable unseen words under add-k smoothing.
+    observed = []
+    prefix_context = previous_n_gram
+    for gram, count in n_plus1_gram_counts.items():
+        if count > 0 and gram[:-1] == prefix_context:
+            word = gram[-1]
+            if word not in observed:
+                observed.append(word)
+
+    candidate_pool = observed if observed else candidates
+
+    results = []
+    for word in candidate_pool:
         if start_with and not word.startswith(start_with.lower()):
             continue
 
@@ -169,33 +191,41 @@ def get_suggestions_for_orders(
     max_order: Optional[int] = None,
     start_with: Optional[str] = None
 ):
-    """
-    Return ranked suggestions for bigram through the selected maximum order.
+    """Return suggestions from the highest N-gram orders supported by input.
 
-    The notebook's get_suggestions() compares adjacent N-gram models:
-    unigram -> bigram, bigram -> trigram, etc.
+    A bigram needs 1 previous word, a trigram needs 2, a 4-gram needs 3,
+    and a 5-gram needs 4.
     """
+    if not n_gram_counts_list or not previous_tokens:
+        return []
+
     if max_order is None:
         max_order = len(n_gram_counts_list)
 
     max_order = max(2, min(max_order, len(n_gram_counts_list)))
+    usable_order = min(max_order, len(previous_tokens) + 1)
 
     all_results = []
 
-    for i in range(max_order - 1):
-        n = i + 2
+    # For an n-gram prediction, use the (n-1)-gram as context counts and
+    # the n-gram as joint counts: bigram -> unigram/bigram, etc.
+    for order in range(2, usable_order + 1):
+        context_counts = n_gram_counts_list[order - 2]
+        joint_counts = n_gram_counts_list[order - 1]
+
         results = rank_next_words(
             previous_tokens,
-            n_gram_counts_list[i],
-            n_gram_counts_list[i + 1],
+            context_counts,
+            joint_counts,
             vocabulary,
             k=k,
             start_with=start_with,
             top_k=top_k
         )
+
         all_results.append({
-            "order": n,
-            "label": f"{n}-gram",
+            "order": order,
+            "label": f"{order}-gram",
             "results": results
         })
 
