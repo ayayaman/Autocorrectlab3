@@ -18,6 +18,7 @@ import os
 import pickle
 import random
 import time
+from pathlib import Path
 
 from model_utils import (
     get_tokenized_data,
@@ -25,8 +26,9 @@ from model_utils import (
     count_n_grams,
 )
 
-DATA_FILE = "en_US.twitter.txt"
-MODEL_FILE = "autocomplete_model.pkl"
+BASE_DIR = Path(__file__).resolve().parent
+DATA_FILE = BASE_DIR / "en_US.twitter.txt"
+MODEL_FILE = BASE_DIR / "autocomplete_model.pkl"
 
 RANDOM_SEED = 87
 TRAIN_RATIO = 0.80

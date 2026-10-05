@@ -1,153 +1,130 @@
 # NLP Lab 03 — Streamlit N-Gram Auto-Complete
 
-This folder adds a graphical Streamlit interface to the Statistical
-Language Modeling / N-gram Auto-Complete lab.
+This is the **deployment-ready GUI version** of the Statistical Language Modeling / N-gram Auto-Complete lab.
 
-The implementation follows the uploaded lab notebook:
+It follows the lab setup:
 
 - Twitter corpus: `en_US.twitter.txt`
 - 80% training / 20% testing
 - `random.seed(87)`
 - minimum word frequency = 2
-- N-gram models from 1-gram through 5-gram
-- `<s>` start token
-- `<e>` end token
-- `<unk>` for low-frequency / OOV words
-- additive (Laplace / Add-k) smoothing
+- 1-gram through 5-gram models
+- `<s>` start token and `<e>` end token
+- `<unk>` for out-of-vocabulary words
+- Add-k (Laplace) smoothing
 - next-word prediction
 - optional prefix filtering
 
 ## Files
 
+Keep **all of these files in the root of the GitHub repository**:
+
 ```text
-NLP_Lab3_Streamlit_AutoComplete/
-│
-├── app.py
-├── model_utils.py
-├── train_model.py
-├── requirements.txt
-├── README.md
-└── en_US.twitter.txt       <-- copy your dataset here
+app.py
+model_utils.py
+train_model.py
+requirements.txt
+README.md
+en_US.twitter.txt
+autocomplete_model.pkl
 ```
 
-## Step 1 — Install Streamlit
+### Important
 
-Open Anaconda Prompt / Terminal in this folder:
+`en_US.twitter.txt` is the **training dataset**.
+
+`autocomplete_model.pkl` is the **already-trained model** created from that dataset. The Streamlit app loads the `.pkl` file; it does **not** retrain the model every time the web app starts.
+
+The supplied project already contains both files, so you can deploy it directly.
+
+## Run locally
+
+Install the dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Step 2 — Put the dataset here
-
-Copy:
-
-```text
-en_US.twitter.txt
-```
-
-into the same folder as `train_model.py`.
-
-## Step 3 — Build the model
-
-Run:
+To retrain the model from the Twitter dataset:
 
 ```bash
 python train_model.py
 ```
 
-This creates:
+This creates/updates:
 
 ```text
 autocomplete_model.pkl
 ```
 
-Training can take some time because the lab creates five N-gram
-count dictionaries.
-
-## Step 4 — Start Streamlit
-
-Run:
+Then run:
 
 ```bash
 streamlit run app.py
 ```
 
-The browser will open the application.
+## Deploy to Streamlit Community Cloud
 
-Usually:
+1. Create/open your GitHub repository.
+2. Upload the **contents of this folder** to the repository root.
+3. Make sure `app.py` is visible directly in the repository root.
+4. Go to Streamlit Community Cloud and create/deploy the app.
+5. Select your GitHub repository and branch `main`.
+6. Set **Main file path** to:
 
 ```text
-http://localhost:8501
+app.py
 ```
 
-## Important
+Do **not** use `streamlit_app.py` as the entrypoint.
 
-Do NOT train the model every time Streamlit reloads.
+The repository should look like:
 
-The model is trained once by:
-
-```bash
-python train_model.py
+```text
+Autocorrectlab3/
+├── app.py
+├── model_utils.py
+├── train_model.py
+├── requirements.txt
+├── README.md
+├── en_US.twitter.txt
+└── autocomplete_model.pkl
 ```
 
-Then `app.py` loads the saved `autocomplete_model.pkl`.
+## GUI features
 
-## Interface features
-
-The GUI contains:
-
-- text input
+- Text input
 - Suggest Next Word button
-- number of suggestions
-- maximum N-gram order
-- smoothing k
-- optional prefix filter
-- vocabulary size
-- model information
-- prediction pipeline
-- ranked suggestions
-- probability percentages
-- comparison of N-gram orders
-- tokenized input viewer
-- explanation of the statistical model
+- Maximum N-gram order: 2–5
+- Number of suggestions: 3–10
+- Add-k smoothing value
+- Optional prefix filtering
+- Vocabulary/model statistics
+- NLP prediction pipeline
+- Ranked next-word suggestions with probabilities
+- Comparison of different N-gram orders
+- Tokenized input viewer
 
 ## Example
 
-Enter:
+Try:
 
 ```text
-i am to
+I want to
 ```
 
-The model will calculate candidate probabilities and display the
-highest-ranked next words.
+Then click **Suggest Next Word**.
 
-You can also enter a prefix:
+You can also use a prefix such as:
 
 ```text
-d
+c
 ```
 
-to restrict suggestions to words beginning with `d`.
+to show only candidate words beginning with `c`.
 
-## Relation to the lab
+## Auto-complete vs. spelling correction
 
-The lab's `suggest_a_word()` function predicts the most likely next
-word from the vocabulary and supports an optional `start_with` prefix.
-The Streamlit interface exposes that same idea as an interactive GUI.
+This project implements **next-word auto-completion** using statistical N-gram language modeling.
 
-This application is an auto-complete interface. It is NOT a full
-spelling-correction system. For example, correcting:
-
-```text
-I lik
-```
-
-to:
-
-```text
-I like
-```
-
-would require an additional spelling-correction component.
+It is not a full spelling-correction system. For example, changing `I lik` into `I like` would require an additional spelling-correction component.

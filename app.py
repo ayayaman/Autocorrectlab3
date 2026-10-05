@@ -1,6 +1,7 @@
 import os
 import pickle
 import re
+from pathlib import Path
 import streamlit as st
 
 from model_utils import get_suggestions_for_orders
@@ -139,15 +140,18 @@ st.markdown(
 # MODEL LOADING
 # ============================================================
 
-MODEL_FILE = "autocomplete_model.pkl"
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_FILE = BASE_DIR / "autocomplete_model.pkl"
 
 
 @st.cache_resource(show_spinner=False)
 def load_model():
-    with open(MODEL_FILE, "rb") as f:
-        model = pickle.load(f)
-
-    return model
+    try:
+        with open(MODEL_FILE, "rb") as f:
+            return pickle.load(f)
+    except Exception as exc:
+        st.error(f"Could not load the trained model: {exc}")
+        st.stop()
 
 
 # ============================================================
